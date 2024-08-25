@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, validator
 from datetime import date
 from bson import ObjectId
 
-class Task(BaseModel):
+class AllTask(BaseModel):
     _id: str = Field(default_factory=uuid.uuid4, alias="_id")
     title: str 
     description: str 
@@ -21,7 +21,7 @@ class Task(BaseModel):
             }
         }
 
-class CreateTask(BaseModel):
+class Task(BaseModel):
     title:str
     description: str 
     date : str

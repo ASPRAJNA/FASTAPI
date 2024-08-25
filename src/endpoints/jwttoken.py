@@ -2,13 +2,15 @@ import os
 from datetime import datetime, timedelta
 from bson import ObjectId,json_util
 import json
+from dotenv import dotenv_values
 from typing import Optional
 import time
 from jose import jwt
-
+config = dotenv_values(".env")
 current_user_id=None
-ALGORITHM = "HS256"
-JWT_SECRET_KEY = "narscbjim@$@&^@&%^&RFghgjvbdsha" 
+
+JWT_SECRET_KEY=config["JWT_SECRET_KEY"]
+ALGORITHM=config["ALGORITHM"]
 
 
 def create_access_token(_id:dict):
