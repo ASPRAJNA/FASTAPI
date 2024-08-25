@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Request, status,HTTPException
+from fastapi import APIRouter, Request, status,HTTPException,Depends
+from src.endpoints.auth_beare import JWTBearer
 from typing import List
-from src.model.tasks import Task, UpdateTask
+from src.model.tasks import Task, UpdateTask,CreateTask
 from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
+import uuid
+from src.endpoints.auth_beare import get_current_user_id
+
+
+jwt=JWTBearer()
+dependency_JWT=[Depends(jwt)]
 
 def get_collection_task(request: Request):
   return request.app.database["Tasks"]
@@ -11,15 +18,18 @@ def get_collection_task(request: Request):
 router = APIRouter(prefix="/Tasks",
     tags=["Tasks"])
 
-@router.post("/", response_description="Create Task", status_code=status.HTTP_201_CREATED, response_model=Task)
-def create_task(request: Request, task: Task):
-    task = jsonable_encoder(task)
-    new_task= get_collection_task(request).insert_one(task)
+@router.post("/", response_description="Create Task", dependencies=dependency_JWT, status_code=status.HTTP_201_CREATED, response_model=CreateTask)
+def create_task(request: Request, task: CreateTask):
+    tasks = jsonable_encoder(task)
+    global current_user
+    current_user=get_current_user_id()
+    tasks["user_id"]=str(current_user)
+    new_task= get_collection_task(request).insert_one(tasks)
     created_task = get_collection_task(request).find_one({"_id": new_task.inserted_id})
     return created_task
 
 
-@router.put("/{id}/", response_description="Update Task", response_model=Task)
+@router.put("/{id}/", response_description="Update Task", dependencies=dependency_JWT, response_model=Task)
 def update_task(request: Request, id: str, task: UpdateTask):
     tasks = {k: v for k, v in task.dict().items() if v is not None}
     print(tasks)
@@ -36,7 +46,10 @@ def update_task(request: Request, id: str, task: UpdateTask):
 
 @router.get("/", response_description="All Tasks", response_model=List[Task])
 def list_task(request: Request,limit:int):
-    task = list(get_collection_task(request).find(limit=limit))
+    global current_user
+    current_user=get_current_user_id()
+    print(current_user)
+    task = list(get_collection_task(request).find({"user_id":current_user}).limit(limit))
     return task
 
 
@@ -47,9 +60,11 @@ def list_task_by_id(request: Request, id: str):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task not found!")
 
 
-@router.delete("/{id}", response_description="Delete Task")
+@router.delete("/{id}",  dependencies=dependency_JWT, response_description="Delete Task")
 def delete_task(request: Request, id: str):
     deleted_task = get_collection_task(request).delete_one({"_id": ObjectId(id)})
     if deleted_task.deleted_count == 1:
         return f"Task with ID {id} deleted sucessfully!"
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task not found!")
+
+
