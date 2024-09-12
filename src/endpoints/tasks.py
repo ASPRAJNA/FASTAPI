@@ -1,12 +1,10 @@
-from fastapi import APIRouter, Request, status,HTTPException,Depends
-from src.endpoints.auth_beare import JWTBearer
 from typing import List
-from src.model.tasks import Task, UpdateTask,AllTask
-from fastapi.encoders import jsonable_encoder
 from bson import ObjectId
-import uuid
+from fastapi.encoders import jsonable_encoder
+from src.model.tasks import Task, UpdateTask
+from src.endpoints.auth_beare import JWTBearer
 from src.endpoints.auth_beare import get_current_user_id
-
+from fastapi import APIRouter, Request, status,HTTPException,Depends
 
 jwt=JWTBearer()
 dependency_JWT=[Depends(jwt)]
@@ -18,8 +16,9 @@ def get_collection_task(request: Request):
 router = APIRouter(prefix="/Tasks",
     tags=["Tasks"])
 
+
 @router.post("/", response_description="Create Task", dependencies=dependency_JWT, status_code=status.HTTP_201_CREATED, response_model=Task)
-def create_task(request: Request, task: Task):
+def create_task(request: Request, task: Task)->dict:
     tasks = jsonable_encoder(task)
     global current_user
     current_user=get_current_user_id()
@@ -30,9 +29,8 @@ def create_task(request: Request, task: Task):
 
 
 @router.put("/{id}/", response_description="Update Task", dependencies=dependency_JWT, response_model=UpdateTask)
-def update_task(request: Request, id: str, task: UpdateTask):
+def update_task(request: Request, id: str, task: UpdateTask)->dict:
     tasks = {k: v for k, v in task.dict().items() if v is not None}
-    print(tasks)
     global current_user
     current_user=get_current_user_id()
     print(current_user)
@@ -42,13 +40,11 @@ def update_task(request: Request, id: str, task: UpdateTask):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task not found!")
     if (existing_book := get_collection_task(request).find_one({"_id": ObjectId(id)})) is not None:
         return existing_book
-
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"task not found!")
 
 
-
 @router.get("/", response_description="All Tasks",dependencies=dependency_JWT, response_model=List[Task])
-def list_task(request: Request,limit:int):
+def list_task(request: Request,limit:int)->list:
     global current_user
     current_user=get_current_user_id()
     print(current_user)
@@ -57,14 +53,14 @@ def list_task(request: Request,limit:int):
 
 
 @router.get("/{id}/", response_description="Fetch Task By ID", dependencies=dependency_JWT, response_model=Task)
-def list_task_by_id(request: Request, id: str):
+def list_task_by_id(request: Request, id: str)->dict:
     if (task := get_collection_task(request).find_one({"_id": ObjectId(id),"user_id":current_user})):
         return task
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task not found!")
 
 
 @router.delete("/{id}",  dependencies=dependency_JWT, response_description="Delete Task")
-def delete_task(request: Request, id: str):
+def delete_task(request: Request, id: str)->str:
     global current_user
     current_user=get_current_user_id()
     print(current_user)

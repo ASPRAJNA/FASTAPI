@@ -1,21 +1,21 @@
 import uuid
 from pydantic import BaseModel, Field, SecretStr
 from pydantic.networks import EmailStr
-from typing import Optional,Required
+from typing import Optional
 
 class User(BaseModel):
     _id: str = Field(default_factory=uuid.uuid4, alias="_id",index=True,unique=True)
     name: str 
     email: EmailStr = Field(unique=True)
-    password: str    
+    password: SecretStr   
 
     class Config:
         allow_population_by_field_name = True
         schema_extra = {
             "example": {
-                "name": "Prajna",
-                "email": "asprajna@gmail.com",
-                "password": "asprajna.psl.123",
+                "name": "User1",
+                "email": "user1@gmail.com",
+                "password": "user1.psl.123",
             }
         }
 
@@ -29,10 +29,10 @@ class Register(BaseModel):
         allow_population_by_field_name = True
         schema_extra = {
             "example": {
-                "name": "Prajna",
-                "email": "asprajna@gmail.com",
-                "password": "asprajna.psl.123",
-                "confirmpass":"asprajna.psl.123"
+                 "name": "User1",
+                "email": "user1@gmail.com",
+                "password": "user1.psl.123",
+                "confirmpass":"user1.psl.123"
             }
         }
 
@@ -50,11 +50,8 @@ class Login(BaseModel):
             }
         }
 
-
 class Token(BaseModel):
     access_token: str
     token_type: str
     
-class TokenData(BaseModel):
-    username: Optional[str] = None
 
